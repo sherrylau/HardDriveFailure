@@ -1,0 +1,2 @@
+library(frailtySurv)
+data(hdfail)
