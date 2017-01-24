@@ -45,7 +45,8 @@ shinyUI(
                                           style = "padding: 30px; border: 4px solid #343d46; background: #FFFFFF;"
                                           ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
-                                          style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
+                                          plotlyOutput(outputId="explore_dist", width="95%"),
+                                          style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                                           )
                             ),
                     tabItem(tabName = "surv_curve",
