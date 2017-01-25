@@ -29,16 +29,19 @@ shinyUI(
                                           ),
                             absolutePanel(top=135, left=250, width=300, height=610, draggable=FALSE,
                                           p("Use the following dropdown menu to select variable to explore distribution"),
-                                          selectInput(inputId='explore_type', label="Choose a type of variable", multiple=FALSE, choices=c("target", "features"), width=200),
-                                          conditionalPanel(condition="input.explore_type=='features'", 
+                                          radioButtons(inputId='explore_method', label="Choose to explore individual variable distribution or univariate against response", choices=c('individual','univariate'), width=200),
+                                          conditionalPanel(condition="input.explore_method=='individual'",
+                                                           selectInput(inputId='explore_type', label="Choose a type of variable", multiple=FALSE, choices=c("target", "features"), width=200)
+                                                           ),
+                                          conditionalPanel(condition="input.explore_method=='individual' & input.explore_type=='features'", 
                                                            selectInput(inputId="explore_feature_type", label="Choose a type of feature", multiple=FALSE, choices=c("categorical","numerical"), width=200)
                                                            ),
-                                          conditionalPanel(condition="input.explore_type=='features' & input.explore_feature_type=='categorical'",
+                                          conditionalPanel(condition="input.explore_method=='individual' & input.explore_type=='features' & input.explore_feature_type=='categorical'",
                                                            radioButtons(inputId="explore_catvar", label="Choose a feature", choices=c("(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
                                                                                                                                    "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
                                                                                                                                    "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
                                                            ),
-                                          conditionalPanel(condition="input.explore_type=='features' & input.explore_feature_type=='numerical'",
+                                          conditionalPanel(condition="input.explore_method=='individual' & input.explore_type=='features' & input.explore_feature_type=='numerical'",
                                                            radioButtons(inputId="explore_numvar", label="Choose a feature", choices=c("Observed followup time"="time",
                                                                                                                                       "Temperature in Celsius"="temp"))
                                                            ),

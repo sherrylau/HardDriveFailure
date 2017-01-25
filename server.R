@@ -23,8 +23,10 @@ shinyServer(function(input,output,session){
         p = ggplot(hdfail, aes(x=status)) + geom_bar(fill="#d36666") + labs(x="Failure Status", y="No. of Observations")
         ggplotly(p)
       } else{
-        p = ggplot(hdfail, aes_string(x=input$explore_catvar)) + geom_bar(fill="#20b2aa") + labs(x=input$explore_catvar, y="No. of Observations")
-        ggplotly(p)
+        if(!is.null(input$explore_catvar)){
+          p = ggplot(hdfail, aes_string(x=input$explore_catvar)) + geom_bar(fill="#20b2aa") + labs(x=input$explore_catvar, y="No. of Observations")
+          ggplotly(p)
+        } 
       }
     }
   })
