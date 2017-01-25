@@ -30,6 +30,7 @@ shinyUI(
                             absolutePanel(top=135, left=250, width=300, height=610, draggable=FALSE,
                                           p("Use the following dropdown menu to select variable to explore distribution"),
                                           radioButtons(inputId='explore_method', label="Choose to explore individual variable distribution or univariate against response", choices=c('individual','univariate'), width=200),
+                                          # Individual Distribution
                                           conditionalPanel(condition="input.explore_method=='individual'",
                                                            selectInput(inputId='explore_type', label="Choose a type of variable", multiple=FALSE, choices=c("target", "features"), width=200)
                                                            ),
@@ -45,10 +46,29 @@ shinyUI(
                                                            radioButtons(inputId="explore_numvar", label="Choose a feature", choices=c("Observed followup time"="time",
                                                                                                                                       "Temperature in Celsius"="temp"))
                                                            ),
+                                          # Univariate Distribution
+                                          conditionalPanel(condition="input.explore_method=='univariate'",
+                                                           selectInput(inputId="uni_feature_type", label="Choose a type of feature", multiple=FALSE, choices=c("categorical","numerical"))
+                                                           ),
+                                          conditionalPanel(condition="input.explore_method=='univariate' & input.uni_feature_type=='categorical'",
+                                                           radioButtons(inputId="uni_catvar", label="Choose a feature", choices=c("(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
+                                                                                                                                 "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
+                                                                                                                                 "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
+                                                           ),
+                                          conditionalPanel(condition="input.explore_method=='univariate' & input.uni_feature_type=='numerical'",
+                                                           radioButtons(inputId="uni_numvar", label="Choose a feature", choices=c("Observed followup time"="time",
+                                                                                                                                 "Temperature in Celsius"="temp"))
+                                                           ),
                                           style = "padding: 30px; border: 4px solid #343d46; background: #FFFFFF;"
                                           ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
-                                          plotlyOutput(outputId="explore_dist", width="95%"),
+                                          conditionalPanel(condition="input.explore_method=='individual'",
+                                                           plotlyOutput(outputId="explore_dist", width="95%")
+                                                           ),
+                                          conditionalPanel(condition="input.explore_method=='univariate'",
+                                                           plotlyOutput(outputId="uni_dist", width="95%"),
+                                                           textOutput(outputId="uni_test")
+                                                           ),
                                           style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                                           )
                             ),
