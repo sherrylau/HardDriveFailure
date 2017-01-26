@@ -78,7 +78,14 @@ shinyUI(
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
                                           ),
                             absolutePanel(top=135, left=250, width=300, height=610, draggable=FALSE,
-                                          style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
+                                          p("Use the following dropdown menu to select variable to explore hard drive survival function"),
+                                          selectInput(inputId="surv_method", label="Choose to view population or comparison by groups survival functions", choices=c("population","comparison"), width=200),
+                                          conditionalPanel(condition="input.surv_method=='comparison'",
+                                                           radioButtons(inputId="surv_features_gp", label="Choose a feature as group",  choices=c("(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
+                                                                                                                                                  "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
+                                                                                                                                                  "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
+                                                           ),
+                                          style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"

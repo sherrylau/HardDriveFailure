@@ -64,7 +64,11 @@ shinyServer(function(input,output,session){
       if(input$uni_feature_type=="categorical"){
         test = chisq.test(hdfail[,input$uni_catvar], hdfail$status)
         print(paste(test$method, "X-squared =", round(test$statistic,2), ", df =",test$parameter, ", p-value =", round(test$p.value,4)))
-      } 
+      } else{
+        formula_in = as.formula(paste(input$uni_numvar,"~status",collapse=""))
+        test = summary(aov(formula_in, data = hdfail))
+        print(paste("ANOVA test with F value:", unlist(test[[1]]["F value"])[1],"with p-value", unlist(test[[1]]["Pr(>F)"])[1]))
+      }
     }
   })
 })
