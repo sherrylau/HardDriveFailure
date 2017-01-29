@@ -1,2 +1,0 @@
-library(frailtySurv)
-data(hdfail)

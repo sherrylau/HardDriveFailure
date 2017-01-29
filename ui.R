@@ -38,9 +38,10 @@ shinyUI(
                                                            selectInput(inputId="explore_feature_type", label="Choose a type of feature", multiple=FALSE, choices=c("categorical","numerical"), width=200)
                                                            ),
                                           conditionalPanel(condition="input.explore_method=='individual' & input.explore_type=='features' & input.explore_feature_type=='categorical'",
-                                                           radioButtons(inputId="explore_catvar", label="Choose a feature", choices=c("(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
-                                                                                                                                   "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
-                                                                                                                                   "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
+                                                           radioButtons(inputId="explore_catvar", label="Choose a feature", choices=c("Hard drive model provider"="model_provider",
+                                                                                                                                      "(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
+                                                                                                                                      "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
+                                                                                                                                      "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
                                                            ),
                                           conditionalPanel(condition="input.explore_method=='individual' & input.explore_type=='features' & input.explore_feature_type=='numerical'",
                                                            radioButtons(inputId="explore_numvar", label="Choose a feature", choices=c("Observed followup time"="time",
@@ -51,7 +52,8 @@ shinyUI(
                                                            selectInput(inputId="uni_feature_type", label="Choose a type of feature", multiple=FALSE, choices=c("categorical","numerical"))
                                                            ),
                                           conditionalPanel(condition="input.explore_method=='univariate' & input.uni_feature_type=='categorical'",
-                                                           radioButtons(inputId="uni_catvar", label="Choose a feature", choices=c("(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
+                                                           radioButtons(inputId="uni_catvar", label="Choose a feature", choices=c("Hard drive model provider"="model_provider",
+                                                                                                                                  "(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
                                                                                                                                  "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
                                                                                                                                  "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
                                                            ),
@@ -66,29 +68,42 @@ shinyUI(
                                                            plotlyOutput(outputId="explore_dist", width="95%")
                                                            ),
                                           conditionalPanel(condition="input.explore_method=='univariate'",
+                                                           h4("Visualization"),
                                                            plotlyOutput(outputId="uni_dist", width="95%"),
+                                                           br(),
+                                                           h4("Statistical Testing"),
                                                            textOutput(outputId="uni_test")
                                                            ),
-                                          style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
+                                          style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
                                           )
                             ),
                     tabItem(tabName = "surv_curve",
                             absolutePanel(top=60, left=250, width=1170, height=80, draggable=FALSE,
-                                          h2("Survival Curve and Log Rank Test", style="padding-left: 30px;"),
+                                          h2("Hard Drive Survival Estimation and Log Rank Test", style="padding-left: 30px;"),
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
                                           ),
                             absolutePanel(top=135, left=250, width=300, height=610, draggable=FALSE,
                                           p("Use the following dropdown menu to select variable to explore hard drive survival function"),
                                           selectInput(inputId="surv_method", label="Choose to view population or comparison by groups survival functions", choices=c("population","comparison"), width=200),
                                           conditionalPanel(condition="input.surv_method=='comparison'",
-                                                           radioButtons(inputId="surv_features_gp", label="Choose a feature as group",  choices=c("(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
+                                                           radioButtons(inputId="surv_features_gp", label="Choose a feature as group",  choices=c("Hard drive model provider"="model_provider",
+                                                                                                                                                  "(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc", 
                                                                                                                                                   "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
-                                                                                                                                                  "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc"))
+                                                                                                                                                  "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc",
+                                                                                                                                                  "Grouped Temperature in Celsius"="temp_gp"))
                                                            ),
                                           style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
-                                          style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
+                                          conditionalPanel(condition="input.surv_method=='population'",
+                                                           h4("Hard Drive Survival Probability over time"),
+                                                           plotlyOutput(outputId="surv_pop")
+                                          ),
+                                          conditionalPanel(condition="input.surv_method=='comparison'",
+                                                           h4("Hard Drive Survival Probability over time by Features"),
+                                                           plotlyOutput(outputId="surv_gp")
+                                                           ),
+                                          style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
                             )
                             ),
                     tabItem(tabName = "coxph",
@@ -97,10 +112,23 @@ shinyUI(
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
                             absolutePanel(top=135, left=250, width=300, height=610, draggable=FALSE,
-                                          style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
+                                          p("70% of the data is stratified sampled by status as training data and the rest as testing data"),
+                                          p("Use the following dropdown menu to select features to apply in cox proportional model"),
+                                          checkboxGroupInput("coxph_features", 
+                                                       label="Select features to be included for modeling then click submit",
+                                                       choices=c("Hard drive model provider"="model_provider",
+                                                                 "(RSC) Whether there were sectors encountered read, write, or verification errors"="rsc",
+                                                                 "(RER) Whether a non-zero rate of errors occur in hardware when reading from data from disk"="rer", 
+                                                                 "(PSC) Whether there were sectors waiting to be remapped due to an unrecoverable error"="psc",
+                                                                 "Temperature in Celsius"="temp")
+                                          ),
+                                          actionButton("coxph_submit", "Submit"),
+                                          style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
-                                          style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
+                                          textOutput('test_print'),
+                                          # dataTableOutput('test_data'),
+                                          style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
                             )
                             )
                   ))
