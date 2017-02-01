@@ -68,10 +68,10 @@ shinyUI(
                                                            plotlyOutput(outputId="explore_dist", width="95%")
                                                            ),
                                           conditionalPanel(condition="input.explore_method=='univariate'",
-                                                           h4("Visualization"),
+                                                           h3("Visualization", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
                                                            plotlyOutput(outputId="uni_dist", width="95%"),
                                                            br(),
-                                                           h4("Statistical Testing"),
+                                                           h3("Statistical Testing", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
                                                            textOutput(outputId="uni_test")
                                                            ),
                                           style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
@@ -126,10 +126,15 @@ shinyUI(
                                           style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
-                                          textOutput('test_print'),
-                                          # dataTableOutput('test_data'),
+                                          h3("Model Result", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
+                                          dataTableOutput('coxph_model_summary'),
                                           style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
-                            )
+                            ),
+                            absolutePanel(top=385, left=555, width=430, height=220, draggable=FALSE,
+                                          h3("Testing Set Actual vs. Predicted over time", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
+                                          plotlyOutput('coxph_predplot'),
+                                          style = "background: #FFFFFF;"
+                                          )
                             )
                   ))
   )

@@ -5,7 +5,7 @@ library(plotly)
 library(frailtySurv)
 library(plyr)
 library(survival)
-library(coxphf)
+library(caret)
 library(ggfortify)
 data(hdfail)
 
@@ -83,7 +83,7 @@ shinyServer(function(input,output,session){
   output$surv_pop = renderPlotly({
     hdfail$status = as.numeric(hdfail$status)
     surv = survfit(Surv(time, status)~ 1, data=hdfail)
-    p = autoplot(surv, censor.size = 0.5, censor.colour = '#666666')
+    p = autoplot(surv, surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
     ggplotly(p)
   })
   
@@ -92,7 +92,7 @@ shinyServer(function(input,output,session){
       hdfail$status = as.numeric(hdfail$status)
       formula_in = as.formula(paste("Surv(time, status) ~ strata(", input$surv_features_gp, ")"))
       surv_strata = survfit(formula_in, data=hdfail)
-      p = autoplot(surv_strata, censor.size = 0.5, censor.colour = '#666666')
+      p = autoplot(surv_strata, surv.linetype = 'dashed', censor.size = 0.5, censor.colour = '#666666')
       ggplotly(p)
     }
   })
@@ -106,29 +106,60 @@ shinyServer(function(input,output,session){
   })
   
   #### 3. Cox Proportional Model ####
-  clicked = reactiveValues(train_data = NULL)
+  clicked = reactiveValues(train_data = NULL, test_data = NULL)
   
   observeEvent(input$coxph_submit, {
     if(!is.null(input$coxph_features)){
-      clicked$train_data = hdfail[,c(input$coxph_features,"status","time")]
+        clicked$train_data = hdfail
+        train_idx = createDataPartition(hdfail$status, p = .70, list = FALSE, times = 1)
+        clicked$train_data = hdfail[train_idx,]
+        clicked$test_data = hdfail[-train_idx,]
     }
-    
   })
   
-  # output$test_print = renderPrint({
-  #   if(!is.null(clicked$train_data)){
-  #     print(input$coxph_features)
-  #   }
-  # })
-  
-  output$test_data = renderDataTable({
+  output$coxph_model_summary = renderDataTable({
     if(!is.null(clicked$train_data)){
       train_data = data.frame(clicked$train_data)
-      if(length(input$coxph_features)>1){
-        coxphf(Surv(time,status) ~ temp, data=hdfail)
-        formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
-        coxph(formula_in, data=clicked$train_data)
+      if(length(input$coxph_features)>=1){
+        # data.frame(clicked$train_data)
+        isolate({
+          train_data = clicked$train_data[,c(input$coxph_features,"status","time")]
+          formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
+          model = coxph(formula_in, data=train_data, ties="breslow")
+          model_summary = data.frame(summary(model)$coefficients)
+          names(model_summary) = c("coef", "exp(coef)","se(coef)","z","p-value")
+          model_summary
+        })
       }
+    }
+  }, options = list(pageLength = 3, dom = 'rtip', searching = FALSE))
+  
+  output$coxph_predplot = renderPlotly({
+    if(!is.null(clicked$train_data)){
+      train_data = data.frame(clicked$train_data)
+      if(length(input$coxph_features)>=1){
+        isolate({
+          train_data = clicked$train_data[,c(input$coxph_features,"status","time")]
+          test_data = clicked$test_data[,c(input$coxph_features,"time")]
+          formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
+          model = coxph(formula_in, data=train_data, ties="breslow")
+          p = autoplot(survfit(model),surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
+          p = p + labs(x="time", y="Survival Probability", title="Predicted Survival Curve")
+          ggplotly(p) 
+        })
+      }
+    } else{
+      return()
+    }
+  })
+  
+  output$coxph_actualplot = renderPlotly({
+    if(!is.null(clicked$train_data)){
+      train_data = data.frame(clicked$train_data)
+      surv = survfit(Surv(time, status)~ 1, data=train_data)
+      p = autoplot(surv, surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
+      p = p + labs(x="time", y="Survival Probability", title="Actual Survival Curve")
+      ggplotly(p)
     }
   })
   
