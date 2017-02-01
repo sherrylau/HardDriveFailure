@@ -7,6 +7,7 @@ library(plyr)
 library(survival)
 library(caret)
 library(ggfortify)
+library(pec)
 data(hdfail)
 
 # https://www.backblaze.com/b2/hard-drive-test-data.html
@@ -23,7 +24,6 @@ shinyServer(function(input,output,session){
   hdfail$psc = as.factor(hdfail$psc)
   hdfail$temp_gp = ifelse(hdfail$temp < as.numeric(quantile(hdfail$temp, 0.5)), 'low', 'high')
     
-  
   # library(outliers)
   # grubbs.test(hdfail$time)
   # hdfail = hdfail[hdfail$time < 4000,]
@@ -110,7 +110,7 @@ shinyServer(function(input,output,session){
   
   observeEvent(input$coxph_submit, {
     if(!is.null(input$coxph_features)){
-        clicked$train_data = hdfail
+        # clicked$train_data = hdfail
         train_idx = createDataPartition(hdfail$status, p = .70, list = FALSE, times = 1)
         clicked$train_data = hdfail[train_idx,]
         clicked$test_data = hdfail[-train_idx,]
@@ -124,10 +124,13 @@ shinyServer(function(input,output,session){
         # data.frame(clicked$train_data)
         isolate({
           train_data = clicked$train_data[,c(input$coxph_features,"status","time")]
+          train_data$status = as.numeric(train_data$status)
           formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
           model = coxph(formula_in, data=train_data, ties="breslow")
           model_summary = data.frame(summary(model)$coefficients)
           names(model_summary) = c("coef", "exp(coef)","se(coef)","z","p-value")
+          inputs = row.names(model_summary)
+          model_summary = cbind(inputs, model_summary)
           model_summary
         })
       }
@@ -140,26 +143,24 @@ shinyServer(function(input,output,session){
       if(length(input$coxph_features)>=1){
         isolate({
           train_data = clicked$train_data[,c(input$coxph_features,"status","time")]
-          test_data = clicked$test_data[,c(input$coxph_features,"time")]
+          train_data$status = as.numeric(train_data$status)
+          test_data = clicked$test_data[,c(input$coxph_features, "time")]
+          # test_data = clicked$test_data[,input$coxph_features]
           formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
           model = coxph(formula_in, data=train_data, ties="breslow")
-          p = autoplot(survfit(model),surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
-          p = p + labs(x="time", y="Survival Probability", title="Predicted Survival Curve")
-          ggplotly(p) 
+          train_data['pred_q1_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.25))
+          train_data['pred_median_t'] = predictSurvProb(model, newdata = train_data, time = median(test_data$time))
+          train_data['pred_q3_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.75))
+          
+          
+          
+          # p = autoplot(survfit(model),surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
+          # p = p + labs(x="time", y="Survival Probability", title = paste("Predicted Survival Probability at Median time", round(median(test_data$time))))
+          # ggplotly(p) 
         })
       }
     } else{
       return()
-    }
-  })
-  
-  output$coxph_actualplot = renderPlotly({
-    if(!is.null(clicked$train_data)){
-      train_data = data.frame(clicked$train_data)
-      surv = survfit(Surv(time, status)~ 1, data=train_data)
-      p = autoplot(surv, surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
-      p = p + labs(x="time", y="Survival Probability", title="Actual Survival Curve")
-      ggplotly(p)
     }
   })
   

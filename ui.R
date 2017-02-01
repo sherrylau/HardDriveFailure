@@ -1,5 +1,6 @@
 library(shiny)
 library(shinydashboard)
+library(plotly)
 
 shinyUI(
   dashboardPage(skin = "red",
@@ -14,11 +15,27 @@ shinyUI(
                 dashboardBody(
                   tabItems(
                     tabItem(tabName = "description",
-                            absolutePanel(top=60, left=250, width=1170, height=80, draggable=FALSE,
+                            absolutePanel(top=60, left=250, width=1150, height=80, draggable=FALSE,
                                           h2("Problem Description", style="padding-left: 30px;"),
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
                                           ),
-                            absolutePanel(top=135, left=250, width=1170, height=610, draggable=FALSE,
+                            absolutePanel(top=135, left=250, width=1150, height=610, draggable=FALSE,
+                                          h3("Use Case", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
+                                          p("Asset lifetime is always the interest for industrial analytics. Knowing the probability of failure at particular time helps company to facilitate maintenance scheduling, asset supply planning, duration of warranty for assets, etc. Typical failure prediction or analysis only provide probability asset will be failing but using survival analysis also provide additional information of failure probability at different time. This application is intended to provide insights and built predictive model for hard drive for which dataset is publicly available"),
+                                          h3("Data Description", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
+                                          p("This dataset is preprocessed from the source and retrieved from a R package 'frailtySurv' which contains the observed follow-up times and SMART statistics of 52k unique hard drives."),
+                                          p("Daily snapshots of a large backup storage provider over 2 years were made publicly available at https://www.backblaze.com/hard-drive-test-data.html."),
+                                          p("On each day, the self-monitoring, analysis and reporting technology (SMART) statistics of operational drives are recorded. When a hard drive is no longer operational, it is marked as failure and removed from the subsequent daily snapshots. New hard drives are also continuously added to the population. In total, there are over 52k unique hard drives over approximately 2 years and 2885 (5.5%) failures."),
+                                          h3("Attributes Description", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
+                                          p("There's a total of 8 variables in the dataset"),
+                                          p("serial = unique serial number of the hard drive. Primary key for the dataset."),
+                                          p("model = hard drive model, model provider = column is modified from model to get the provider only information rather than including the device number"),
+                                          p("time = the observed followup time"),
+                                          p("status = failure indicator. binary where 0 = censored and 1 = failed"),
+                                          p("temp = temperature in Celsius"),
+                                          p("rsc = binary, where 1 = sectors that encountered read, write or vertification errors"),
+                                          p("rer = binary, where 1 = a non-zero rate of errors that occur in hardware when reading from data from disk"),
+                                          p("psc = binary, where 1 = there were sectors waiting to be remapped due to unrecoverable error"),
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
                                           )
                             ),
@@ -96,11 +113,11 @@ shinyUI(
                             ),
                             absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
                                           conditionalPanel(condition="input.surv_method=='population'",
-                                                           h4("Hard Drive Survival Probability over time"),
+                                                           h3("Hard Drive Survival Probability over time", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
                                                            plotlyOutput(outputId="surv_pop")
                                           ),
                                           conditionalPanel(condition="input.surv_method=='comparison'",
-                                                           h4("Hard Drive Survival Probability over time by Features"),
+                                                           h3("Hard Drive Survival Probability over time by Features", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
                                                            plotlyOutput(outputId="surv_gp")
                                                            ),
                                           style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
