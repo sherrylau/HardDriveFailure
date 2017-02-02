@@ -7,7 +7,8 @@ library(plyr)
 library(survival)
 library(caret)
 library(ggfortify)
-library(pec)
+library(broom)
+library(survMisc)
 data(hdfail)
 
 # https://www.backblaze.com/b2/hard-drive-test-data.html
@@ -83,7 +84,14 @@ shinyServer(function(input,output,session){
   output$surv_pop = renderPlotly({
     hdfail$status = as.numeric(hdfail$status)
     surv = survfit(Surv(time, status)~ 1, data=hdfail)
-    p = autoplot(surv, surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
+    surv_summary = surv_summary(surv)
+    # p = autoplot(surv, surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
+    p = ggplot(surv_summary, aes(x=time, y=surv)) + 
+      geom_line(linetype=3, color="blue") + 
+      geom_ribbon(aes(x=time, ymin=lower, ymax=upper), alpha=0.1) + 
+      # geom_point(aes(x=time, y=n.event)) +
+      ylim(0,1) +
+      labs(x="Time", y="Survival Probability")
     ggplotly(p)
   })
   
@@ -92,7 +100,14 @@ shinyServer(function(input,output,session){
       hdfail$status = as.numeric(hdfail$status)
       formula_in = as.formula(paste("Surv(time, status) ~ strata(", input$surv_features_gp, ")"))
       surv_strata = survfit(formula_in, data=hdfail)
-      p = autoplot(surv_strata, surv.linetype = 'dashed', censor.size = 0.5, censor.colour = '#666666')
+      surv_summary = surv_summary(surv_strata)
+      p = ggplot(aes(x=time, y=surv, fill=strata, color=strata), data = surv_summary) + 
+        geom_line(linetype=3) +
+        geom_ribbon(aes(x=time, ymin=lower, ymax=upper), alpha=0.1) +
+        # geom_point(aes(x=time, y=n.event)) +
+        ylim(0,1) +
+        labs(x="Time", y="Survival Probability")
+      # p = autoplot(surv_strata, surv.linetype = 'dashed', censor.size = 0.5, censor.colour = '#666666')
       ggplotly(p)
     }
   })
@@ -148,19 +163,30 @@ shinyServer(function(input,output,session){
           # test_data = clicked$test_data[,input$coxph_features]
           formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
           model = coxph(formula_in, data=train_data, ties="breslow")
-          train_data['pred_q1_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.25))
-          train_data['pred_median_t'] = predictSurvProb(model, newdata = train_data, time = median(test_data$time))
-          train_data['pred_q3_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.75))
+          model_fit = cox.zph(model)
+          model_summary = tidy(survfit(model))
           
+          p = ggplot(aes(x=time, y=estimate), data=model_summary) + 
+            geom_line(linetype=3, color="blue") + 
+            geom_ribbon(aes(x=time, ymin=conf.low, ymax=conf.high), alpha=0.1) +
+            ylim(0,1) +
+            labs(x="Time", y="Estimated Survival Probability", title = "Predicted Survival Function")
+          ggplotly(p)
           
-          
-          # p = autoplot(survfit(model),surv.linetype = 'dashed', surv.colour = 'blue', censor.size = 0.5, censor.colour = '#666666')
-          # p = p + labs(x="time", y="Survival Probability", title = paste("Predicted Survival Probability at Median time", round(median(test_data$time))))
-          # ggplotly(p) 
+          # train_data['pred_q1_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.25))
+          # train_data['pred_median_t'] = predictSurvProb(model, newdata = train_data, time = median(test_data$time))
+          # train_data['pred_q3_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.75))
         })
       }
     } else{
       return()
+    }
+  })
+  
+  output$coxph_actualplot = renderPlotly({
+    if(!is.null(clicked$train_data)){
+      surv = survfit(Surv(time, status)~ 1, data=clicked$train_data)
+      surv_summary = surv_summary(surv)
     }
   })
   
