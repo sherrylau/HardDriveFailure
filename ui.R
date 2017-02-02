@@ -13,6 +13,23 @@ shinyUI(
                                    menuItem("Cox Proportional Model", tabName = "coxph", icon = icon("th"))
                                  )),
                 dashboardBody(
+                  tags$head(tags$style(HTML('
+                                            /* logo */
+                                            .skin-black .main-header .logo{
+                                            background-color: #4f5b66; border-color:#4f5b66; color: #FFFFFF; font-weight: bold;
+                                            }
+                                            /* logo when hovered */
+                                            .skin-black .main-header .logo:hover {
+                                            background-color: #4f5b66; border-color:#4f5b66; color: #FFFFFF; font-weight: bold;
+                                            }
+                                            /* navbar */
+                                            .skin-black .main-header .navbar {
+                                            background-color: #4f5b66;
+                                            }
+                                            .content-wrapper,
+                                            .right-side {
+                                            overflow-y: auto; height:1100px; background-color: #343d46;  
+                                            }'))),
                   tabItems(
                     tabItem(tabName = "description",
                             absolutePanel(top=60, left=250, width=1150, height=80, draggable=FALSE,
@@ -128,8 +145,7 @@ shinyUI(
                                           h2("Cox Proportional Model", style="padding-left: 30px;"),
                                           style = "padding: 1px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
-                            absolutePanel(top=135, left=250, width=300, height=610, draggable=FALSE,
-                                          p("70% of the data is stratified sampled by status as training data and the rest as testing data"),
+                            absolutePanel(top=135, left=250, width=300, height=1000, draggable=FALSE,
                                           p("Use the following dropdown menu to select features to apply in cox proportional model"),
                                           checkboxGroupInput("coxph_features", 
                                                        label="Select features to be included for modeling then click submit",
@@ -142,14 +158,26 @@ shinyUI(
                                           actionButton("coxph_submit", "Submit"),
                                           style = "padding: 10px; border: 4px solid #343d46; background: #FFFFFF;"
                             ),
-                            absolutePanel(top=135, left=545, width=875, height=610, draggable=FALSE,
+                            absolutePanel(top=135, left=545, width=875, height=1000, draggable=FALSE,
                                           h3("Model Result", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
                                           dataTableOutput('coxph_model_summary'),
-                                          style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"
-                            ),
-                            absolutePanel(top=385, left=555, width=430, height=220, draggable=FALSE,
-                                          h3("Testing Set Actual vs. Predicted over time", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
-                                          plotlyOutput('coxph_predplot'),
+                                          style = "padding: 5px; border: 4px solid #343d46; background: #FFFFFF;"),
+                            
+                            absolutePanel(top=405, left=555, width=850, height=300, draggable=FALSE,
+                                          h3("Predicted and Actual Survival Curve", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;"),
+                                          plotlyOutput('coxph_plot'),
+                                          conditionalPanel(condition="input.coxph_submit==1", h3("Predicted probability of hard drive at time t", style="font-size:20px; font-weight: bold; margin:0 0 8px 0;")),
+                                          style = "background: #FFFFFF;"
+                                          ),
+                            absolutePanel(top=865, left=555, width=300, height=250, draggable=FALSE,
+                                          conditionalPanel(condition="input.coxph_submit==1", 
+                                                           selectInput("coxph_predict_id", label="Choose a hard drive serial number", choices=NULL)),
+                                          textOutput("coxph_pred"),
+                                          style = "background: #FFFFFF;"
+                                          ),
+                            absolutePanel(top=865, left=905, width=300, height=250, draggable=FALSE,
+                                          conditionalPanel(condition="input.coxph_submit==1", 
+                                                           selectInput("coxph_time", label="Choose a time to predict", choices=seq(100,5000,100))),
                                           style = "background: #FFFFFF;"
                                           )
                             )

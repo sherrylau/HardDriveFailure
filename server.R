@@ -5,8 +5,9 @@ library(plotly)
 library(frailtySurv)
 library(plyr)
 library(survival)
-library(caret)
 library(ggfortify)
+library(pec)
+library(survminer)
 library(broom)
 library(survMisc)
 data(hdfail)
@@ -104,10 +105,8 @@ shinyServer(function(input,output,session){
       p = ggplot(aes(x=time, y=surv, fill=strata, color=strata), data = surv_summary) + 
         geom_line(linetype=3) +
         geom_ribbon(aes(x=time, ymin=lower, ymax=upper), alpha=0.1) +
-        # geom_point(aes(x=time, y=n.event)) +
         ylim(0,1) +
         labs(x="Time", y="Survival Probability")
-      # p = autoplot(surv_strata, surv.linetype = 'dashed', censor.size = 0.5, censor.colour = '#666666')
       ggplotly(p)
     }
   })
@@ -125,10 +124,8 @@ shinyServer(function(input,output,session){
   
   observeEvent(input$coxph_submit, {
     if(!is.null(input$coxph_features)){
-        # clicked$train_data = hdfail
-        train_idx = createDataPartition(hdfail$status, p = .70, list = FALSE, times = 1)
-        clicked$train_data = hdfail[train_idx,]
-        clicked$test_data = hdfail[-train_idx,]
+        clicked$train_data = hdfail
+        updateSelectInput(session, "coxph_predict_id", choices = head(as.character(unique(hdfail$serial)),20))
     }
   })
   
@@ -152,25 +149,29 @@ shinyServer(function(input,output,session){
     }
   }, options = list(pageLength = 3, dom = 'rtip', searching = FALSE))
   
-  output$coxph_predplot = renderPlotly({
+  output$coxph_plot = renderPlotly({
     if(!is.null(clicked$train_data)){
       train_data = data.frame(clicked$train_data)
       if(length(input$coxph_features)>=1){
         isolate({
           train_data = clicked$train_data[,c(input$coxph_features,"status","time")]
           train_data$status = as.numeric(train_data$status)
-          test_data = clicked$test_data[,c(input$coxph_features, "time")]
-          # test_data = clicked$test_data[,input$coxph_features]
           formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
           model = coxph(formula_in, data=train_data, ties="breslow")
           model_fit = cox.zph(model)
           model_summary = tidy(survfit(model))
           
-          p = ggplot(aes(x=time, y=estimate), data=model_summary) + 
-            geom_line(linetype=3, color="blue") + 
-            geom_ribbon(aes(x=time, ymin=conf.low, ymax=conf.high), alpha=0.1) +
+          clicked$train_data$status = as.numeric(clicked$train_data$status)
+          surv = survfit(Surv(time, status)~ 1, data=clicked$train_data)
+          surv_summary = surv_summary(surv)
+          
+          p = ggplot() + 
+            geom_line(aes(x=time, y=estimate), data=model_summary, linetype=3, color="blue") + 
+            geom_line(aes(x=time, y=surv), data=surv_summary, linetype=3, color="red") + 
+            geom_ribbon(aes(x=time, ymin=conf.low, ymax=conf.high), data=model_summary, fill="blue", alpha=0.2) +
+            geom_ribbon(aes(x=time, ymin=lower, ymax=upper), data=surv_summary, fill="red", alpha=0.2) +
             ylim(0,1) +
-            labs(x="Time", y="Estimated Survival Probability", title = "Predicted Survival Function")
+            labs(x="Time", y="Survival Probability")
           ggplotly(p)
           
           # train_data['pred_q1_t'] = predictSurvProb(model, newdata = train_data, time = quantile(test_data$time, 0.25))
@@ -183,12 +184,19 @@ shinyServer(function(input,output,session){
     }
   })
   
-  output$coxph_actualplot = renderPlotly({
-    if(!is.null(clicked$train_data)){
-      surv = survfit(Surv(time, status)~ 1, data=clicked$train_data)
-      surv_summary = surv_summary(surv)
-    }
+  output$coxph_pred = renderPrint({
+      isolate({
+        train_data = clicked$train_data[,c(input$coxph_features,"status","time")]
+        train_data$status = as.numeric(train_data$status)
+        formula_in = as.formula(paste("Surv(time, status) ~ 1", paste("+", input$coxph_features, collapse='')))
+        model = coxph(formula_in, data=train_data, ties="breslow")
+        
+        select_data = hdfail[hdfail$serial==input$coxph_predict_id,c(input$coxph_features)]
+        survprob = predictSurvProb(model, newdata = select_data, time=input$coxph_time)
+        paste("Probability hard drive is operatable at", input$coxph_time, "for hard driver serial", input$coxph_predict_id, "is", round(survprob,4))
+      })
   })
+  
   
 })
 
