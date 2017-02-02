@@ -1,3 +1,5 @@
+rm(list = ls())
+pdf(NULL)
 library(shiny)
 library(shinydashboard)
 library(plotly)
@@ -172,7 +174,7 @@ shinyUI(
                             absolutePanel(top=865, left=555, width=300, height=250, draggable=FALSE,
                                           conditionalPanel(condition="input.coxph_submit==1", 
                                                            selectInput("coxph_predict_id", label="Choose a hard drive serial number", choices=NULL)),
-                                          textOutput("coxph_pred"),
+                                          textOutput(outputId="coxph_pred"),
                                           style = "background: #FFFFFF;"
                                           ),
                             absolutePanel(top=865, left=905, width=300, height=250, draggable=FALSE,
